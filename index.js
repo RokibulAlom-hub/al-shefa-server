@@ -1,12 +1,12 @@
 require("dotenv").config();
-const express = require('express')
-const app = express()
+const express = require("express");
+const app = express();
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 7000;
 
-// middlewares 
-app.use(cors())
+// middlewares
+app.use(cors());
 app.use(express.json());
 
 //Mongodb configuration
@@ -16,12 +16,52 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
   try {
-     console.log("Connected to MongoDB successfully!");
+    console.log("Connected to MongoDB successfully!");
+    //user collection created
+    const usersCol = client.db("AlshefaAdmin").collection("allusers");
+
+    //  user creation operation
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await usersCol.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "user already exist", insertedId: null });
+      }
+      const result = await usersCol.insertOne(user);
+      res.status(201).send(result);
+    });
+    // user get operation
+    app.get("/users",async(req,res) => {
+    const findusers = req.body;
+    const result = await usersCol.find().toArray;
+    res.send (result)
+    })
+    // users data get by email 
+    app.get("/users/:email",async(req,res) => {
+      const email = req.params.email;
+      const query = {email: {$regex:`^${email}$`,$options:"i"}}; //case insensitive search
+      const result = await usersCol.findOne(query);
+      res.send(result)
+    })
+    // update user status by id params
+    app.patch("/update-role/:id",async(req,res) => {
+      const id = req.params.id;
+      const role = req.body.role;
+      const filter = {_id: new ObjectId(id)};
+      const updateStatus ={
+        $set:{
+          role: role,
+        }
+      }
+      const result =await usersCol.updateOne(filter,updateStatus);
+      res.send(result)
+    })
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -29,13 +69,11 @@ async function run() {
 }
 run().catch(console.dir);
 
-
 //base route
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 //start server
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
-
+  console.log(`Example app listening on port ${port}`);
+});
