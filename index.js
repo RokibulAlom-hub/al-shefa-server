@@ -24,7 +24,9 @@ async function run() {
     console.log("Connected to MongoDB successfully!");
     //user collection created
     const usersCol = client.db("AlshefaAdmin").collection("allusers");
-
+    const appointmentCollection = client
+      .db("AlshefaAdmin")
+      .collection("appoinments");
     //  user creation operation
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -37,31 +39,49 @@ async function run() {
       res.status(201).send(result);
     });
     // user get operation
-    app.get("/users",async(req,res) => {
-    const findusers = req.body;
-    const result = await usersCol.find().toArray;
-    res.send (result)
-    })
-    // users data get by email 
-    app.get("/users/:email",async(req,res) => {
+    app.get("/users", async (req, res) => {
+      const findusers = req.body;
+      const result = await usersCol.find().toArray;
+      res.send(result);
+    });
+    // users data get by email
+    app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
-      const query = {email: {$regex:`^${email}$`,$options:"i"}}; //case insensitive search
+      const query = { email: { $regex: `^${email}$`, $options: "i" } }; //case insensitive search
       const result = await usersCol.findOne(query);
-      res.send(result)
-    })
+      res.send(result);
+    });
     // update user status by id params
-    app.patch("/update-role/:id",async(req,res) => {
+    app.patch("/update-role/:id", async (req, res) => {
       const id = req.params.id;
       const role = req.body.role;
-      const filter = {_id: new ObjectId(id)};
-      const updateStatus ={
-        $set:{
+      const filter = { _id: new ObjectId(id) };
+      const updateStatus = {
+        $set: {
           role: role,
-        }
+        },
+      };
+      const result = await usersCol.updateOne(filter, updateStatus);
+      res.send(result);
+    });
+    //appoinment booking by patient
+    app.post("/appoinment", async (req, res) => {
+      const appoint = req.body;
+      const result = await appointmentCollection.insertOne(appoint);
+      res.send(result);
+    });
+    //get all appoinments
+    app.get("/appoinments", async (req, res) => {
+      const email = req.query.email;
+      if (email) {
+        const query = { email: email };
+        const queryResult = await appointmentCollection.find(query).toArray();
+        res.send(queryResult);
+      } else {
+        const result = await appointmentCollection.find().toArray();
+        res.send(result);
       }
-      const result =await usersCol.updateOne(filter,updateStatus);
-      res.send(result)
-    })
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
