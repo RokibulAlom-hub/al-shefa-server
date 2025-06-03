@@ -27,6 +27,9 @@ async function run() {
     const appointmentCollection = client
       .db("AlshefaAdmin")
       .collection("appoinments");
+    const orderRecords = client
+      .db("AlshefaAdmin")
+      .collection("medicineOrder");
     //  user creation operation
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -82,6 +85,50 @@ async function run() {
         res.send(result);
       }
     });
+    // cancel appoinments
+    app.patch("/appoinments/:id",async(req,res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const query = {_id: new ObjectId(id)};
+      const updateStatus={
+        $set:{
+          status:status,
+        },
+      };
+      const result = await appointmentCollection.updateOne(query,updateStatus)
+      res.send(result)
+    })
+    // medicine order create 
+    app.post("/orderMedi",async(req,res) => {
+      const order = req.body;
+      const result = await orderRecords.insertOne(order)
+      res.send(result);
+    })
+    //get all order and also by query 
+    app.get("/orderMedi",async(req,res) => {
+      const email = req.query.email;
+      if (email) {
+        const query = {email: email};
+        const queryResult = await orderRecords.find(query).toArray();
+        res.send(queryResult);
+      } else {
+        const result = await orderRecords.find().toArray();
+        res.send(result)
+      }
+    })
+    //update medicine order status
+    app.patch("/orderMedi/:id",async(req,res) =>{
+      const id = req.params.id;
+      const status = req.body.status;
+      const query = {_id: new ObjectId(id)};
+      const updateStatus = {
+        $set:{
+          status:status
+        },
+      }
+      const result = await orderRecords.updateOne(query,updateStatus);
+      res.send(result);
+    })
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
