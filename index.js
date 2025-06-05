@@ -2,12 +2,21 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 7000;
 
 // middlewares
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser())
+
+//cookieoptions
+const cookieOptions = {
+  httpOnly:true,
+  secure:process.env.NODE_ENV === "production",
+  sameSite:process.env.NODE_ENV === "production" ? "none" : "strict",
+};
 
 //Mongodb configuration
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jds8f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -34,6 +43,22 @@ async function run() {
     const orderRecords = client.db("AlshefaAdmin").collection("medicineOrder");
     //medicine storage
     const medicineStorage = client.db("AlshefaAdmin").collection("medicine");
+
+    // generate jwt token
+    app.post("/jwt",async(req,res) => {
+      const user = req.body;
+      //validation for user
+      if (!user || !user) {
+         return res.status(400).json({ error: "Invalid user data" });
+      }
+      const jwttoken = jwt.sign(user,process.env.Access_Token_Secret,{expiresIn:"2h"})
+
+      res.cookie("token",jwttoken,cookieOptions).send({success:true});
+    })
+   //clear jwt token while logout
+   app.post("/jwt-logout",async(req,res) => {
+    res.clearCookie("token",cookieOptions).send({success:true})
+   });
     //  user creation operation
     app.post("/users", async (req, res) => {
       const user = req.body;
