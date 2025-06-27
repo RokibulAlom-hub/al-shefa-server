@@ -120,12 +120,11 @@ async function run() {
       const email = req.query.email;
       if (email) {
         const query = {
-          $or: [{ doctoremail: email }, { patientemail: email }],
+          $or: [{ doctoremail: email }, { patientmail: email }],
         };
-        // console.log(query);
-
         const queryResult = await appointmentCollection.find(query).toArray();
         res.send(queryResult);
+        // console.log(email, query, queryResult);
       } else {
         const result = await appointmentCollection.find().toArray();
         res.send(result);
@@ -135,9 +134,14 @@ async function run() {
     app.get("/appoinments/unconfirmed", async (req, res) => {
       const email = req.query.email;
       if (email) {
-        const query = { docemail: email, status: { $ne: "Confirmed" } };
+        const query = {
+          doctoremail: { $regex: `^${email}$`, $options: "i" },
+          status: { $ne:  "Confirmed" },
+        };
+
         const queryResult = await appointmentCollection.find(query).toArray();
         res.send(queryResult);
+        // console.log(email,query,queryResult);
       } else {
         const result = await appointmentCollection.find().toArray();
         res.send(result);
@@ -222,13 +226,6 @@ async function run() {
       const result = await doctorsCollection.insertOne(doctorData);
       res.send(result);
     });
-    //create pharmasists
-    app.post("/pharmasicts", async (req, res) => {
-      const pharmaData = req.body;
-
-      const result = await pharmasictCollection.insertOne(pharmaData);
-      res.send(result);
-    });
     //get doctors
     app.get("/doctors", async (req, res) => {
       const id = req.query._id;
@@ -241,13 +238,19 @@ async function run() {
         res.send(result);
       }
     });
+    //create pharmasists
+    app.post("/pharmasicts", async (req, res) => {
+      const pharmaData = req.body;
+
+      const result = await pharmasictCollection.insertOne(pharmaData);
+      res.send(result);
+    });
     //get Pharmasists
     app.get("/pharmacists", async (req, res) => {
       const result = await pharmasictCollection.find().toArray();
       res.send(result);
     });
     //get doctor by id
-    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
