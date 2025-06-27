@@ -11,7 +11,12 @@ const port = process.env.PORT || 7000;
 // middlewares
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://healthcareproject-f0b30.web.app",
+      "https://healthcareproject-f0b30.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -136,7 +141,7 @@ async function run() {
       if (email) {
         const query = {
           doctoremail: { $regex: `^${email}$`, $options: "i" },
-          status: { $ne:  "Confirmed" },
+          status: { $ne: "Confirmed" },
         };
 
         const queryResult = await appointmentCollection.find(query).toArray();
